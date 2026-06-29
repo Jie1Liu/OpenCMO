@@ -38,7 +38,8 @@ class LLMService:
             "promotion, job posts, engagement bait, or a keyword match without user need. Do not reward "
             "popularity or engagement. Score 80-100 only for a strong, actionable match; 60-79 for a "
             "plausible match; 40-59 for weak/ambiguous evidence; 0-39 for a poor match. Give one short, "
-            "evidence-based reason in English. Return every lead exactly once as JSON only: "
+            "evidence-based reason in English. Keep each reason under 18 words. Return every lead exactly "
+            "once as JSON only: "
             '{"rankings":[{"lead_id":"...","fit_score":0,"reason":"..."}]}'
         )
         payload = {
@@ -49,7 +50,7 @@ class LLMService:
                 "main_problem": main_problem,
                 "solution": solution,
             },
-            "candidates": candidates[:24],
+            "candidates": candidates[:12],
         }
 
         try:
@@ -179,8 +180,27 @@ class LLMService:
         return self._fit_bluesky_limit(draft) if draft else None
 
     def _extract_rankings(self, text: str) -> dict[str, dict[str, Any]]:
-        value = json.loads(self._clean_json_text(text))
-        rows = value.get("rankings") if isinstance(value, dict) else None
+        cleaned = self._clean_json_text(text)
+        try:
+            value = json.loads(cleaned)
+        except json.JSONDecodeError:
+            object_start = cleaned.find("{")
+            object_end = cleaned.rfind("}")
+            if object_start < 0 or object_end <= object_start:
+                raise
+            value = json.loads(cleaned[object_start : object_end + 1])
+
+        if isinstance(value, list):
+            rows = value
+        elif isinstance(value, dict):
+            rows = (
+                value.get("rankings")
+                or value.get("ranked_leads")
+                or value.get("results")
+                or value.get("leads")
+            )
+        else:
+            rows = None
         if not isinstance(rows, list):
             raise ValueError("Model response did not contain rankings.")
 
@@ -188,8 +208,10 @@ class LLMService:
         for row in rows:
             if not isinstance(row, dict):
                 continue
-            lead_id = row.get("lead_id")
+            lead_id = row.get("lead_id") or row.get("leadId") or row.get("id")
             fit_score = row.get("fit_score")
+            if fit_score is None:
+                fit_score = row.get("score")
             reason = row.get("reason")
             if not isinstance(lead_id, str) or not isinstance(reason, str):
                 continue

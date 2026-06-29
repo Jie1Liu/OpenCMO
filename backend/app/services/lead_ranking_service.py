@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.lead import Lead
 from app.models.product import Product
 from app.services.llm_service import LLMService
 
+logger = logging.getLogger(__name__)
+
 
 class LeadRankingService:
     """Re-rank heuristic candidates with strict, evidence-based LLM judgment."""
 
-    def rerank_product(self, db: Session, product: Product, *, limit: int = 24) -> int:
+    def rerank_product(self, db: Session, product: Product, *, limit: int = 12) -> int:
         leads = (
             db.query(Lead)
             .options(joinedload(Lead.social_item))
@@ -23,7 +27,7 @@ class LeadRankingService:
             {
                 "lead_id": str(lead.id),
                 "author": lead.author_name,
-                "post": lead.social_item.content_text[:1200],
+                "post": lead.social_item.content_text[:700],
                 "heuristic_score": lead.lead_score,
                 "detected_intent": lead.intent_type,
                 "search_context": lead.social_item.source_context,
@@ -53,4 +57,5 @@ class LeadRankingService:
             updated += 1
 
         db.flush()
+        logger.info("AI lead ranking updated %s of %s candidates.", updated, len(leads))
         return updated
