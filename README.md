@@ -70,6 +70,32 @@ LLM_API_KEY=...
 LLM_MODEL=gpt-5.5
 ```
 
+Only these four variables need to change when switching providers. In Zeabur, open
+**Service → Variable**, add the variables, save, and wait for the automatic redeploy.
+Do not include `/chat/completions` in `LLM_BASE_URL`; AIMO appends that path itself.
+
+DeepSeek:
+
+```bash
+LLM_API_STYLE=chat_completions
+LLM_BASE_URL=https://api.deepseek.com
+LLM_API_KEY=your-deepseek-key
+LLM_MODEL=deepseek-v4-flash
+```
+
+Qwen through Alibaba Cloud Model Studio:
+
+```bash
+LLM_API_STYLE=chat_completions
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LLM_API_KEY=your-dashscope-key
+LLM_MODEL=qwen-plus
+```
+
+For another compatible provider, use its OpenAI-compatible base URL, API key, and
+model ID. `LLM_API_STYLE=chat_completions` works with most providers; use `responses`
+only for endpoints that implement OpenAI's Responses API.
+
 If no model key is configured, the review flow uses a safe contextual template.
 
 ## Start Frontend

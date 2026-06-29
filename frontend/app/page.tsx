@@ -5,10 +5,13 @@ import {
   Bot,
   Check,
   CheckCircle2,
+  ChevronDown,
   ExternalLink,
   Eye,
   LoaderCircle,
+  MessageCircle,
   MessageSquareText,
+  Plus,
   Radio,
   RefreshCw,
   Search,
@@ -148,6 +151,7 @@ export default function HomePage() {
   const [stage, setStage] = useState("Ready to discover");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [platformMenuOpen, setPlatformMenuOpen] = useState(false);
 
   const selected = useMemo(
     () => queue.find((item) => item.message.id === selectedId) ?? null,
@@ -384,11 +388,45 @@ export default function HomePage() {
     <main className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark"><Sparkles size={20} /></div>
+          <div className="brand-mark">
+            <img src="/aimo-logo.svg" alt="" />
+          </div>
           <div>
             <strong>AIMO</strong>
-            <span>Audience intelligence</span>
+            <span>Find signal. Start conversations.</span>
           </div>
+        </div>
+
+        <div className="platform-switcher">
+          <button
+            type="button"
+            className="add-platform-button"
+            aria-expanded={platformMenuOpen}
+            onClick={() => setPlatformMenuOpen((current) => !current)}
+          >
+            <span className="add-platform-icon"><Plus size={14} /></span>
+            添加其他平台
+            <ChevronDown className={platformMenuOpen ? "open" : ""} size={15} />
+          </button>
+          {platformMenuOpen && (
+            <div className="platform-dropdown" role="menu" aria-label="其他平台">
+              <div className="platform-option" role="menuitem" aria-disabled="true">
+                <span className="platform-option-icon x-icon">X</span>
+                <div>
+                  <strong>X / Twitter</strong>
+                  <small>Coming soon</small>
+                </div>
+              </div>
+              <div className="platform-option" role="menuitem" aria-disabled="true">
+                <span className="platform-option-icon reddit-icon"><MessageCircle size={16} /></span>
+                <div>
+                  <strong>Reddit</strong>
+                  <small>Coming soon</small>
+                </div>
+              </div>
+              <p>展示入口 · 暂未接入 API</p>
+            </div>
+          )}
         </div>
 
         <div className="platform-card">
