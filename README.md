@@ -1,0 +1,2 @@
+# AIMO
+ai cmo
