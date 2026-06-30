@@ -44,8 +44,6 @@ class Settings(BaseSettings):
         default="https://api.bsky.app",
         alias="BLUESKY_PUBLIC_API_URL",
     )
-    bluesky_handle: Optional[str] = Field(default=None, alias="BLUESKY_HANDLE")
-    bluesky_app_password: Optional[str] = Field(default=None, alias="BLUESKY_APP_PASSWORD")
     jwt_secret: str = Field(default="change-me-in-production", alias="JWT_SECRET")
 
     mock_search_limit: int = 8
@@ -54,10 +52,6 @@ class Settings(BaseSettings):
     @property
     def effective_llm_api_key(self) -> Optional[str]:
         return self.llm_api_key or self.openai_api_key
-
-    @property
-    def bluesky_is_configured(self) -> bool:
-        return bool(self.bluesky_handle and self.bluesky_app_password)
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

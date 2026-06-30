@@ -120,6 +120,23 @@ button:disabled { cursor: not-allowed; opacity: .52; }
 }
 .connection-dot.online { background: #71dd9d; box-shadow: 0 0 0 4px rgba(113,221,157,.12); }
 
+.account-setup {
+  display: grid; gap: 10px; padding: 13px;
+  border: 1px solid rgba(200,241,105,.22); border-radius: 12px;
+  background: rgba(200,241,105,.055);
+}
+.account-setup .section-heading { margin: 0 0 1px; }
+.account-setup .section-heading svg { color: var(--lime); }
+.account-setup label { display: grid; gap: 5px; color: #aebdb4; font-size: 10px; font-weight: 700; }
+.account-setup input {
+  width: 100%; height: 37px; padding: 0 10px; box-sizing: border-box;
+  border: 1px solid #30473b; border-radius: 8px; outline: none;
+  color: #f5faf7; background: rgba(4,18,11,.48); font: inherit;
+}
+.account-setup input:focus { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(200,241,105,.1); }
+.account-setup input::placeholder { color: #668074; }
+.account-setup p { margin: 1px 0 0; color: #82968b; font-size: 9px; line-height: 1.45; }
+
 .brief { display: grid; gap: 13px; }
 .section-heading {
   display: flex; align-items: center; justify-content: space-between;

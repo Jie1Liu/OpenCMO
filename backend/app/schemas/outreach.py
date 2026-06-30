@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, SecretStr
 
 
 class OutreachMessageCreate(BaseModel):
@@ -19,6 +19,11 @@ class OutreachMessageUpdate(BaseModel):
     tone: Optional[str] = None
     risk_level: Optional[str] = None
     status: Optional[str] = None
+
+
+class BlueskySendRequest(BaseModel):
+    handle: str
+    app_password: SecretStr
 
 
 class OutreachMessageRead(BaseModel):

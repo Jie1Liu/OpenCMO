@@ -10,6 +10,11 @@ from app.outbound.base_outbound import BaseOutboundConnector, SendResult
 class YouTubeOutboundConnector(BaseOutboundConnector):
     platform = "youtube"
 
-    def send(self, account: PlatformAccount, message: OutreachMessage) -> SendResult:
+    def send(
+        self,
+        account: PlatformAccount,
+        message: OutreachMessage,
+        credentials: Optional[dict[str, str]] = None,
+    ) -> SendResult:
         digest = sha1(f"youtube:{account.id}:{message.id}".encode("utf-8")).hexdigest()[:12]
         return SendResult(status="sent", action="public_comment_reply", platform_response_id=f"yt_reply_{digest}")

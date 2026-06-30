@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Optional
 from hashlib import sha256
 from hmac import compare_digest
 

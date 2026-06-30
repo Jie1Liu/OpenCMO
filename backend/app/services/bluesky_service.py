@@ -30,16 +30,17 @@ class BlueskyService:
             data = response.json()
         return list(data.get("posts", []))
 
-    def create_session(self) -> BlueskySession:
-        if not settings.bluesky_is_configured:
-            raise ValueError("Bluesky handle and app password are not configured.")
+    def create_session(self, *, identifier: str, app_password: str) -> BlueskySession:
+        identifier = identifier.strip().lstrip("@")
+        if not identifier or not app_password:
+            raise ValueError("Bluesky handle and App Password are required.")
         url = f"{settings.bluesky_service_url.rstrip('/')}/xrpc/com.atproto.server.createSession"
         with httpx.Client(timeout=20, headers={"User-Agent": self.user_agent}) as client:
             response = client.post(
                 url,
                 json={
-                    "identifier": settings.bluesky_handle,
-                    "password": settings.bluesky_app_password,
+                    "identifier": identifier,
+                    "password": app_password,
                 },
             )
             response.raise_for_status()
@@ -51,8 +52,15 @@ class BlueskyService:
             refresh_jwt=str(data["refreshJwt"]),
         )
 
-    def send_reply(self, *, text: str, target: dict[str, Any]) -> tuple[str, str]:
-        session = self.create_session()
+    def send_reply(
+        self,
+        *,
+        text: str,
+        target: dict[str, Any],
+        identifier: str,
+        app_password: str,
+    ) -> tuple[str, str]:
+        session = self.create_session(identifier=identifier, app_password=app_password)
         target_uri = str(target["uri"])
         target_cid = str(target["cid"])
         root_uri = str(target.get("root_uri") or target_uri)

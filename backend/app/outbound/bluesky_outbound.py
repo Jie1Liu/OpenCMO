@@ -1,4 +1,6 @@
 from __future__ import annotations
+from typing import Optional
+
 import httpx
 
 from app.models.outreach_message import OutreachMessage
@@ -10,12 +12,21 @@ from app.services.bluesky_service import BlueskyService
 class BlueskyOutboundConnector(BaseOutboundConnector):
     platform = "bluesky"
 
-    def send(self, account: PlatformAccount, message: OutreachMessage) -> SendResult:
+    def send(
+        self,
+        account: PlatformAccount,
+        message: OutreachMessage,
+        credentials: Optional[dict[str, str]] = None,
+    ) -> SendResult:
         try:
+            if not credentials:
+                raise ValueError("Bluesky credentials are required for this send.")
             item = message.lead.social_item
             uri, _ = BlueskyService().send_reply(
                 text=message.final_text or message.draft_text,
                 target=item.raw_json,
+                identifier=credentials.get("handle") or "",
+                app_password=credentials.get("app_password") or "",
             )
             return SendResult(status="sent", action="public_reply", platform_response_id=uri)
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:

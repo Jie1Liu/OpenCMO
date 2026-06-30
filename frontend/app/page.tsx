@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ExternalLink,
   Eye,
+  KeyRound,
   ListChecks,
   LoaderCircle,
   MessageCircle,
@@ -25,7 +26,7 @@ import {
   TrendingUp,
   Users
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 type ProductForm = {
   company_name: string;
@@ -168,7 +169,14 @@ export default function HomePage() {
     return "https://aimo-backend.zeabur.app";
   });
   const [product, setProduct] = useState<ProductForm>(initialProduct);
-  const [platform, setPlatform] = useState<BlueskyStatus | null>(null);
+  const [platform, setPlatform] = useState<BlueskyStatus>({
+    configured: false,
+    connected: false,
+    handle: null,
+    account_id: null
+  });
+  const [blueskyHandle, setBlueskyHandle] = useState("");
+  const [blueskyAppPassword, setBlueskyAppPassword] = useState("");
   const [queue, setQueue] = useState<ReviewItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -188,10 +196,6 @@ export default function HomePage() {
     ? Math.round(queue.reduce((total, item) => total + displayedMatch(item), 0) / queue.length)
     : 0;
 
-  useEffect(() => {
-    void loadPlatformStatus();
-  }, []);
-
   async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${apiUrl}${path}`, {
       ...options,
@@ -209,9 +213,11 @@ export default function HomePage() {
     return data as T;
   }
 
-  async function loadPlatformStatus() {
+  async function loadPlatformStatus(companyId: string) {
     try {
-      const status = await request<BlueskyStatus>("/api/integrations/bluesky/status");
+      const status = await request<BlueskyStatus>(
+        `/api/integrations/bluesky/status?company_id=${encodeURIComponent(companyId)}`
+      );
       setPlatform(status);
     } catch {
       setPlatform({ configured: false, connected: false, handle: null, account_id: null });
@@ -245,17 +251,31 @@ export default function HomePage() {
         body: JSON.stringify(productPayload())
       });
 
-      if (platform?.configured) {
+      const wantsConnection = Boolean(blueskyHandle.trim() || blueskyAppPassword);
+      if (wantsConnection) {
+        if (!blueskyHandle.trim() || !blueskyAppPassword) {
+          throw new Error(
+            "Enter both your Bluesky handle and App Password, or leave both blank for search-only mode."
+          );
+        }
         setStage("Connecting your Bluesky account");
         try {
           await request("/api/integrations/bluesky/connect", {
             method: "POST",
-            body: JSON.stringify({ company_id: created.company_id })
+            body: JSON.stringify({
+              company_id: created.company_id,
+              handle: blueskyHandle.trim(),
+              app_password: blueskyAppPassword
+            })
           });
-          await loadPlatformStatus();
-        } catch {
-          // Public discovery still works without write credentials.
+          await loadPlatformStatus(created.company_id);
+        } catch (cause) {
+          throw new Error(
+            cause instanceof Error ? cause.message : "Could not connect this Bluesky account."
+          );
         }
+      } else {
+        setPlatform({ configured: false, connected: false, handle: null, account_id: null });
       }
 
       setStage("Building search strategy");
@@ -373,9 +393,9 @@ export default function HomePage() {
     if (!platform?.connected) {
       setNotice(null);
       setError(
-        "Bluesky sending is not connected yet. Create a Bluesky App Password, then add BLUESKY_HANDLE and BLUESKY_APP_PASSWORD to Zeabur. Discovery and review already work."
+        "Bluesky sending is not connected. Enter your own handle and App Password in the sidebar, then run Find users again."
       );
-      setStage("Bluesky sending needs one-time setup");
+      setStage("Connect your own Bluesky account");
       return;
     }
     setBusy("send");
@@ -391,7 +411,11 @@ export default function HomePage() {
       );
       await request(`/api/outreach-messages/${updated.id}/approve`, { method: "POST" });
       const result = await request<SendResponse>(`/api/outreach-messages/${updated.id}/send`, {
-        method: "POST"
+        method: "POST",
+        body: JSON.stringify({
+          handle: blueskyHandle.trim(),
+          app_password: blueskyAppPassword
+        })
       });
       if (result.message.status !== "sent") {
         throw new Error(result.log.error_message || "Bluesky did not accept the reply.");
@@ -470,6 +494,36 @@ export default function HomePage() {
           </div>
           <div className={`connection-dot ${platform?.connected ? "online" : ""}`} />
         </div>
+
+        <section className="account-setup">
+          <div className="section-heading">
+            <span>Your Bluesky account</span>
+            <KeyRound size={14} />
+          </div>
+          <label>
+            Handle
+            <input
+              value={blueskyHandle}
+              placeholder="name.bsky.social"
+              autoComplete="username"
+              onChange={(event) => setBlueskyHandle(event.target.value)}
+            />
+          </label>
+          <label>
+            App Password
+            <input
+              type="password"
+              value={blueskyAppPassword}
+              placeholder="xxxx-xxxx-xxxx-xxxx"
+              autoComplete="off"
+              onChange={(event) => setBlueskyAppPassword(event.target.value)}
+            />
+          </label>
+          <p>
+            Use a Bluesky App Password, never your main password. It stays only in
+            this browser tab and is never stored by AIMO.
+          </p>
+        </section>
 
         <section className="brief">
           <div className="section-heading">
@@ -563,12 +617,12 @@ export default function HomePage() {
 
         {error && <div className="alert error-alert">{error}</div>}
         {notice && <div className="alert success-alert">{notice}</div>}
-        {!platform?.configured && (
+        {!platform?.connected && (
           <div className="credential-banner">
             <div><ShieldCheck size={19} /></div>
             <p>
-              <strong>Live search is ready.</strong> To enable sending, create a Bluesky App Password
-              and add <code>BLUESKY_HANDLE</code> and <code>BLUESKY_APP_PASSWORD</code> to the backend.
+              <strong>Your account stays yours.</strong> Enter your own Bluesky Handle and App Password
+              in the sidebar to enable sending. Leave both blank to use search-only mode.
             </p>
           </div>
         )}
@@ -795,8 +849,7 @@ export default function HomePage() {
                 </div>
                 {!platform?.connected && (
                   <p className="send-hint">
-                    Sending needs a one-time Bluesky App Password connection. Click the button
-                    for the exact setup requirement.
+                    Sending requires the Bluesky account you entered for this workspace.
                   </p>
                 )}
               </section>

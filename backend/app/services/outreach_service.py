@@ -85,7 +85,13 @@ class OutreachService:
         message.status = "rejected"
         return message
 
-    def send(self, db: Session, message: OutreachMessage) -> tuple[OutreachMessage, OutreachLog, str]:
+    def send(
+        self,
+        db: Session,
+        message: OutreachMessage,
+        *,
+        credentials: Optional[dict[str, str]] = None,
+    ) -> tuple[OutreachMessage, OutreachLog, str]:
         message_text = message.final_text or message.draft_text
         if message.status != "approved":
             raise PolicyError("Message must be approved before sending.")
@@ -108,7 +114,7 @@ class OutreachService:
             raise PolicyError("Selected platform account has reached its daily send limit.")
 
         connector = get_outbound_connector(message.platform)
-        result = connector.send(account, message)
+        result = connector.send(account, message, credentials)
         log = OutreachLog(
             outreach_message_id=message.id,
             platform_account_id=account.id,

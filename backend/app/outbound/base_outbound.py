@@ -17,5 +17,10 @@ class SendResult:
 class BaseOutboundConnector:
     platform: str
 
-    def send(self, account: PlatformAccount, message: OutreachMessage) -> SendResult:
+    def send(
+        self,
+        account: PlatformAccount,
+        message: OutreachMessage,
+        credentials: Optional[dict[str, str]] = None,
+    ) -> SendResult:
         raise NotImplementedError

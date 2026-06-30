@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.core.exceptions import NotFoundError
 from app.models.outreach_message import OutreachMessage
 from app.models.product import Product
-from app.schemas.outreach import OutreachMessageRead, OutreachMessageUpdate, SendResponse
+from app.schemas.outreach import BlueskySendRequest, OutreachMessageRead, OutreachMessageUpdate, SendResponse
 from app.services.outreach_service import OutreachService
 
 router = APIRouter()
@@ -86,11 +86,21 @@ def reject_outreach_message(message_id: UUID, db: Session = Depends(get_db)) -> 
 
 
 @router.post("/api/outreach-messages/{message_id}/send", response_model=SendResponse)
-def send_outreach_message(message_id: UUID, db: Session = Depends(get_db)) -> SendResponse:
+def send_outreach_message(
+    message_id: UUID,
+    payload: Optional[BlueskySendRequest] = None,
+    db: Session = Depends(get_db),
+) -> SendResponse:
     message = db.get(OutreachMessage, message_id)
     if not message:
         raise NotFoundError("Outreach message not found.")
-    message, log, action = OutreachService().send(db, message)
+    credentials = None
+    if payload:
+        credentials = {
+            "handle": payload.handle,
+            "app_password": payload.app_password.get_secret_value(),
+        }
+    message, log, action = OutreachService().send(db, message, credentials=credentials)
     db.commit()
     db.refresh(message)
     db.refresh(log)

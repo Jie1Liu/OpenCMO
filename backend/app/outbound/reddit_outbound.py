@@ -8,7 +8,12 @@ from app.outbound.base_outbound import BaseOutboundConnector, SendResult
 class RedditOutboundConnector(BaseOutboundConnector):
     platform = "reddit"
 
-    def send(self, account: PlatformAccount, message: OutreachMessage) -> SendResult:
+    def send(
+        self,
+        account: PlatformAccount,
+        message: OutreachMessage,
+        credentials: Optional[dict[str, str]] = None,
+    ) -> SendResult:
         return SendResult(
             status="manual_action_required",
             action="copy_or_open_original",

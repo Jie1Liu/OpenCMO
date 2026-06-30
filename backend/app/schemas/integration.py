@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, SecretStr
 
 
 class BlueskyStatusRead(BaseModel):
@@ -16,3 +16,5 @@ class BlueskyStatusRead(BaseModel):
 
 class BlueskyConnectRequest(BaseModel):
     company_id: UUID
+    handle: str = Field(min_length=3, max_length=253)
+    app_password: SecretStr
